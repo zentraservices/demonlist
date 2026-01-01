@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>GD Demonlist (Tabs + Slide Panel)</title>
+  <style>
+    :root{
+      --bg1:#3a0000;
+      --bg2:#050507;
+      --panel:rgba(10,10,12,.72);
+      --panel2:rgba(16,16,20,.86);
+      --text:#f2f4f8;
+      --muted:#b6bdc8;
+      --line:rgba(255,255,255,.10);
+      --accent:#ff3b3b;
+      --accent2:#ff7b7b;
+      --ok:#3bd19a;
+      --warn:#d6a63a;
+      --bad:#ff6b6b;
+      --radius:14px;
+      --mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
+      --sans:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      --shadow:0 20px 70px rgba(0,0,0,.55);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--sans);
+      color:var(--text);
+      background:
+        radial-gradient(1100px 900px at 15% 0%, rgba(255,60,60,.22), transparent 58%),
+        radial-gradient(900px 700px at 85% 10%, rgba(255,120,120,.12), transparent 62%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      line-height:1.35;
+    }
+    a{color:var(--accent2);text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1180px;margin:0 auto;padding:18px 14px 42px}
+    .top{
+      display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;
+      padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:12px;
+    }
+    h1{margin:0;font-size:16px;font-weight:850;letter-spacing:.2px}
+    .sub{margin:3px 0 0;color:var(--muted);font-size:12px}
+    .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .tabs{
+      display:flex;gap:6px;align-items:center;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:4px;
+      background:rgba(0,0,0,.18);
+      backdrop-filter: blur(10px);
+    }
+    .tab{
+      appearance:none;border:none;cursor:pointer;
+      background:transparent;color:var(--muted);
+      padding:8px 10px;border-radius:999px;
+      font-size:12px;font-weight:800;
+    }
+    .tab.on{background:rgba(255,255,255,.06);color:var(--text)}
+    .btn{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+      color:var(--text);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      font-size:12px;
+      font-weight:800;
+      backdrop-filter: blur(10px);
+    }
+    .btn:hover{border-color:rgba(255,255,255,.16)}
+    .btn.primary{border-color:rgba(255,60,60,.45)}
+    .btn.primary:hover{border-color:rgba(255,60,60,.75)}
+    .status{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+    .dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+    .dot.ok{background:var(--ok)}
+    .dot.bad{background:var(--bad)}
+    .mono{font-family:var(--mono)}
+    .card{
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      background:var(--panel);
+      backdrop-filter: blur(12px);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .bar{
+      padding:12px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+      flex-wrap:wrap;
+      border-bottom:1px solid var(--line);
+      background:linear-gradient(to bottom, rgba(255,255,255,.06), transparent);
+    }
+    .inputs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    input,select{
+      background:rgba(0,0,0,.18);
+      border:1px solid var(--line);
+      color:var(--text);
+      outline:none;
+      border-radius:12px;
+      padding:9px 10px;
+      font-size:12px;
+      min-width: 180px;
+      backdrop-filter: blur(10px);
+    }
+    select{min-width:140px}
+    input::placeholder{color:rgba(182,189,200,.65)}
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    .tablewrap{max-height:74vh;overflow:auto}
+    table{width:100%;border-collapse:collapse;font-size:12px}
+    thead th{
+      position:sticky;top:0;z-index:2;
+      text-align:left;
+      padding:10px 12px;
+      color:rgba(182,189,200,.85);
+      background:rgba(0,0,0,.18);
+      border-bottom:1px solid var(--line);
+      font-weight:850;
+      backdrop-filter: blur(10px);
+    }
+    tbody td{
+      padding:10px 12px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      vertical-align:middle;
+    }
+    tbody tr{cursor:pointer}
+    tbody tr:hover{background:rgba(255,255,255,.04)}
+    tbody tr.sel{background:rgba(255,60,60,.10)}
+    .right{text-align:right}
+    .foot{
+      padding:10px 12px;
+      border-top:1px solid var(--line);
+      display:flex;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+      color:var(--muted);
+      font-size:11px;
+    }
+
+    /* Slide-in panel */
+    .overlay{
+      position:fixed;inset:0;
+      background:rgba(0,0,0,.55);
+      opacity:0;pointer-events:none;
+      transition:opacity .18s ease;
+    }
+    .overlay.on{opacity:1;pointer-events:auto}
+    .drawer{
+      position:fixed;top:0;right:0;height:100%;
+      width:min(520px, 92vw);
+      background:var(--panel2);
+      border-left:1px solid var(--line);
+      transform:translateX(100%);
+      transition:transform .22s ease;
+      box-shadow:var(--shadow);
+      display:flex;flex-direction:column;
+    }
+    .drawer.on{transform:translateX(0)}
+    .drawerHead{
+      padding:14px 14px 10px;
+      border-bottom:1px solid var(--line);
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+    }
+    .drawerTitle{display:flex;flex-direction:column;gap:4px}
+    .drawerTitle .name{font-size:13px;font-weight:900;letter-spacing:.2px}
+    .drawerTitle .meta{font-size:11px;color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+    .pill{
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:5px 9px;
+      background:rgba(0,0,0,.18);
+    }
+    .xbtn{
+      border:1px solid var(--line);
+      background:rgba(0,0,0,.18);
+      color:var(--text);
+      border-radius:12px;
+      padding:8px 10px;
+      cursor:pointer;
+      font-size:12px;
+      font-weight:900;
+    }
+    .drawerBody{padding:12px 14px;overflow:auto}
+    .kv{
+      display:grid;
+      grid-template-columns: 130px 1fr;
+      gap:8px 10px;
+      font-size:12px;
+      padding:10px 0 12px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+    }
+    .k{color:var(--muted)}
+    .v{color:var(--text);word-break:break-word}
+    .sectionLabel{
+      margin:12px 0 8px;
+      font-size:11px;
+      font-weight:900;
+      color:rgba(182,189,200,.90);
+      letter-spacing:.08em;
+      text-transform:uppercase;
+    }
+    .records{
+      border-top:1px solid rgba(255,255,255,.08);
+      margin-top:10px;
+    }
+    .recRow{
+      display:flex;gap:10px;justify-content:space-between;align-items:flex-start;
+      padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);
+      font-size:12px;
+    }
+    .recRow .l{display:flex;flex-direction:column;gap:2px}
+    .recRow .p{font-weight:900}
+    .recRow .s{font-size:11px;color:var(--muted)}
+    .badge{
+      font-size:11px;
+      border:1px solid rgba(255,255,255,.10);
+      border-radius:999px;
+      padding:5px 9px;
+      background:rgba(0,0,0,.18);
+      white-space:nowrap;
+    }
+    .warnBox{
+      margin-top:12px;
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:12px;
+      padding:10px 12px;
+      color:var(--muted);
+      font-size:11px;
+      line-height:1.45;
+      background:rgba(0,0,0,.18);
+    }
+    .credits{
+      padding:14px;
+      color:var(--muted);
+      font-size:12px;
+      line-height:1.6;
+    }
+    .credits h2{margin:0 0 10px;font-size:13px;color:var(--text)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Geometry Dash Demonlist</h1>
+        <p class="sub">Tabs: List • Players • Credits. Click a level to open a sliding detail panel with verification + records.</p>
+      </div>
+
+      <div class="row">
+        <div class="tabs" role="tablist" aria-label="Tabs">
+          <button class="tab on" id="tabList" role="tab" aria-selected="true">List</button>
+          <button class="tab" id="tabPlayers" role="tab" aria-selected="false">Players</button>
+          <button class="tab" id="tabCredits" role="tab" aria-selected="false">Credits</button>
+        </div>
+        <button class="btn" id="btnApi">API</button>
+        <button class="btn primary" id="btnReload">Reload</button>
+        <div class="status">
+          <span class="dot" id="dot"></span>
+          <span id="statusText">Idle</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIST -->
+    <section class="card" id="viewList">
+      <div class="bar">
+        <div class="inputs">
+          <input id="listSearch" placeholder="Search level / verifier / publisher"/>
+          <select id="listRange" title="Range">
+            <option value="10">Top 10</option>
+            <option value="25">Top 25</option>
+            <option value="75">Top 75</option>
+            <option value="150" selected>Top 150</option>
+          </select>
+          <select id="listSort" title="Sort">
+            <option value="rank_asc">Rank ↑</option>
+            <option value="rank_desc">Rank ↓</option>
+            <option value="name_asc">Name A→Z</option>
+            <option value="name_desc">Name Z→A</option>
+          </select>
+        </div>
+        <div class="inputs">
+          <span class="mono" id="apiHint"></span>
+        </div>
+      </div>
+
+      <div class="tablewrap">
+        <table aria-label="Demon list">
+          <thead>
+            <tr>
+              <th style="width:82px">Rank</th>
+              <th>Level</th>
+              <th style="width:200px">Verifier</th>
+              <th style="width:200px">Publisher</th>
+            </tr>
+          </thead>
+          <tbody id="listRows"></tbody>
+        </table>
+      </div>
+
+      <div class="foot">
+        <div id="listCount">0 shown</div>
+        <div>
+          <a href="https://pointercrate.com/demonlist/" target="_blank" rel="noreferrer">Pointercrate</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAYERS -->
+    <section class="card" id="viewPlayers" style="display:none">
+      <div class="bar">
+        <div class="inputs">
+          <input id="playerSearch" placeholder="Search player"/>
+          <select id="playerTop" title="Top">
+            <option value="10">Top 10</option>
+            <option value="25">Top 25</option>
+            <option value="50">Top 50</option>
+            <option value="100" selected>Top 100</option>
+          </select>
+          <select id="playerSort" title="Sort">
+            <option value="rank_asc">Rank ↑</option>
+            <option value="rank_desc">Rank ↓</option>
+            <option value="score_desc">Points ↓</option>
+            <option value="name_asc">Name A→Z</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tablewrap">
+        <table aria-label="Player ranking">
+          <thead>
+            <tr>
+              <th style="width:82px">Rank</th>
+              <th>Player</th>
+              <th style="width:180px">Region</th>
+              <th class="right" style="width:160px">List points</th>
+            </tr>
+          </thead>
+          <tbody id="playerRows"></tbody>
+        </table>
+      </div>
+
+      <div class="foot">
+        <div id="playerCount">0 shown</div>
+        <div>
+          <a href="https://pointercrate.com/demonlist/statsviewer/" target="_blank" rel="noreferrer">Stats Viewer</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- CREDITS -->
+    <section class="card" id="viewCredits" style="display:none">
+      <div class="credits">
+        <h2>Credits</h2>
+        <div>
+          <div><strong>goldenblox</strong><div style="font-size:11px;color:#b6bdc8;margin-top:4px;font-style:italic">"he’s just a chill guy"</div></div>
+          <div style="margin-top:8px"><strong>Pointercrate Team</strong> — creators/maintainers of the original Demonlist and website.</div>
+        </div>
+
+        <div class="warnBox" style="margin-top:14px">
+          If this page is opened as <span class="mono">file://</span>, browsers often block requests to <span class="mono">pointercrate.com</span> (CORS).
+          Use a small local proxy and set the <span class="mono">API</span> button to <span class="mono">http://localhost:8787</span>.
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Slide panel -->
+  <div class="overlay" id="overlay" aria-hidden="true"></div>
+  <aside class="drawer" id="drawer" aria-label="Details panel">
+    <div class="drawerHead">
+      <div class="drawerTitle">
+        <div class="name" id="dName">—</div>
+        <div class="meta">
+          <span class="pill mono" id="dRank">—</span>
+          <span class="pill" id="dReqPill">Req —</span>
+          <span class="pill" id="dRecordCount">Records —</span>
+        </div>
+      </div>
+      <button class="xbtn" id="btnClose">Close</button>
+    </div>
+
+    <div class="drawerBody">
+      <div class="kv">
+        <div class="k">Verifier</div><div class="v" id="dVerifier">—</div>
+        <div class="k">Publisher</div><div class="v" id="dPublisher">—</div>
+        <div class="k">Creators</div><div class="v" id="dCreators">—</div>
+        <div class="k">Video</div><div class="v" id="dVideo">—</div>
+      </div>
+
+      <div class="sectionLabel">Who has beaten this level</div>
+      <div class="muted" style="font-size:11px;margin-bottom:6px">Approved 100% records (first 100 shown; use a proxy if you see errors).</div>
+
+      <div id="recordsBox" class="records"></div>
+
+      <div class="warnBox" id="corsBox" style="display:none"></div>
+    </div>
+  </aside>
+
+  <script>
+    // API notes:
+    // - Ranked demons: GET /api/v2/demons/listed/
+    // - Records listing: GET /api/v1/records/ (filter using demon_id + status)
+    // - Player ranking: GET /api/v1/players/ranking/
+    //
+    // Documentation for /records/ filtering includes demon_id, demon_position, status, progress, etc.
+    // (See pointercrate-like API docs.)  citeturn3view0
+
+    const DEFAULT_API_BASE =
+      (location.protocol === "http:" || location.protocol === "https:")
+        ? "https://pointercrate.com"
+        : "https://pointercrate.com";
+
+    const $ = (id) => document.getElementById(id);
+
+    const ui = {
+      tabList: $("tabList"),
+      tabPlayers: $("tabPlayers"),
+      tabCredits: $("tabCredits"),
+      viewList: $("viewList"),
+      viewPlayers: $("viewPlayers"),
+      viewCredits: $("viewCredits"),
+      btnApi: $("btnApi"),
+      btnReload: $("btnReload"),
+      dot: $("dot"),
+      statusText: $("statusText"),
+      apiHint: $("apiHint"),
+      // list
+      listSearch: $("listSearch"),
+      listRange: $("listRange"),
+      listSort: $("listSort"),
+      listRows: $("listRows"),
+      listCount: $("listCount"),
+      // players
+      playerSearch: $("playerSearch"),
+      playerTop: $("playerTop"),
+      playerSort: $("playerSort"),
+      playerRows: $("playerRows"),
+      playerCount: $("playerCount"),
+      // drawer
+      overlay: $("overlay"),
+      drawer: $("drawer"),
+      btnClose: $("btnClose"),
+      dName: $("dName"),
+      dRank: $("dRank"),
+      dReqPill: $("dReqPill"),
+      dRecordCount: $("dRecordCount"),
+      dVerifier: $("dVerifier"),
+      dPublisher: $("dPublisher"),
+      dCreators: $("dCreators"),
+      dVideo: $("dVideo"),
+      recordsBox: $("recordsBox"),
+      corsBox: $("corsBox"),
+    };
+
+    const state = {
+      apiBase: localStorage.getItem("apiBase") || DEFAULT_API_BASE,
+      demons: [],
+      players: [],
+      recordsCache: new Map(), // demonId -> records[]
+      selectedDemonId: null,
+      activeTab: "list",
+    };
+
+    function setStatus(kind, text){
+      ui.dot.className = "dot" + (kind === "ok" ? " ok" : kind === "bad" ? " bad" : "");
+      ui.statusText.textContent = text;
+    }
+
+    function apiUrl(pathAndQuery){
+      const base = state.apiBase.replace(/\/+$/, "");
+      const p = pathAndQuery.startsWith("/") ? pathAndQuery : ("/" + pathAndQuery);
+      return base + p;
+    }
+
+    async function fetchJson(url){
+      const res = await fetch(url, { headers: { "Accept":"application/json" }});
+      if(!res.ok){
+        const body = await res.text().catch(()=> "");
+        throw new Error("HTTP " + res.status + " " + res.statusText + (body ? (" — " + body.slice(0, 160)) : ""));
+      }
+      return await res.json();
+    }
+
+    function safeStr(v){ return (v == null) ? "" : String(v); }
+
+    function switchTab(tab){
+      state.activeTab = tab;
+      ui.viewList.style.display = tab === "list" ? "" : "none";
+      ui.viewPlayers.style.display = tab === "players" ? "" : "none";
+      ui.viewCredits.style.display = tab === "credits" ? "" : "none";
+
+      ui.tabList.classList.toggle("on", tab === "list");
+      ui.tabPlayers.classList.toggle("on", tab === "players");
+      ui.tabCredits.classList.toggle("on", tab === "credits");
+
+      ui.tabList.setAttribute("aria-selected", tab === "list" ? "true" : "false");
+      ui.tabPlayers.setAttribute("aria-selected", tab === "players" ? "true" : "false");
+      ui.tabCredits.setAttribute("aria-selected", tab === "credits" ? "true" : "false");
+
+      // Lazy load players
+      if(tab === "players" && state.players.length === 0){
+        loadPlayers().catch(showErrStatus);
+      }
+    }
+
+    function showErrStatus(err){
+      console.error(err);
+      setStatus("bad", "Error");
+      ui.apiHint.textContent = "Error: " + (err && err.message ? err.message.slice(0, 80) : String(err).slice(0, 80));
+    }
+
+    function hintApi(){
+      ui.apiHint.textContent = stripProto(state.apiBase) + " • API";
+    }
+
+    function stripProto(s){ return String(s || "").replace(/^https?:\/\//, ""); }
+
+    function promptApi(){
+      const v = prompt(
+        "API base URL (no trailing slash)\n\nRecommended when running a proxy:\n  http://localhost:8787\n\nDefault:\n  https://pointercrate.com",
+        state.apiBase
+      );
+      if(v == null) return;
+      const cleaned = v.trim().replace(/\/+$/, "");
+      if(!cleaned) return;
+      state.apiBase = cleaned;
+      localStorage.setItem("apiBase", cleaned);
+      hintApi();
+      reloadActive();
+    }
+
+    function reloadActive(){
+      ui.apiHint.textContent = "Loading…";
+      if(state.activeTab === "players"){
+        loadPlayers(true).catch(showErrStatus);
+      } else if(state.activeTab === "list"){
+        loadDemons(true).catch(showErrStatus);
+      }
+    }
+
+    // ----------------------------
+    // LIST: demons
+    // ----------------------------
+    async function loadDemons(force=false){
+      setStatus("", "Loading list…");
+      hintApi();
+      ui.listRows.innerHTML = "";
+      ui.listCount.textContent = "Loading…";
+
+      const wantAtLeast = parseInt(ui.listRange.value, 10);
+      const limit = 100;
+      let after = null;
+      let all = [];
+      let guard = 0;
+
+      while(true){
+        guard++;
+        if(guard > 20) break;
+
+        const qs = new URLSearchParams();
+        qs.set("limit", String(limit));
+        if(after !== null) qs.set("after", String(after));
+
+        const page = await fetchJson(apiUrl("/api/v2/demons/listed/?" + qs.toString()));
+        if(!Array.isArray(page)) break;
+
+        all = all.concat(page);
+        if(page.length < limit) break;
+
+        const last = page[page.length - 1];
+        if(!last || last.position == null) break;
+        after = last.position;
+
+        if(all.length >= wantAtLeast) break;
+      }
+
+      state.demons = all.filter(d => d && d.position != null);
+      renderList();
+      setStatus("ok", "Loaded");
+    }
+
+    function demonBlob(d){
+      return (
+        safeStr(d.name) + " " +
+        safeStr(d.verifier && d.verifier.name) + " " +
+        safeStr(d.publisher && d.publisher.name)
+      ).toLowerCase();
+    }
+
+    function renderList(){
+      const q = ui.listSearch.value.trim().toLowerCase();
+      const maxPos = parseInt(ui.listRange.value, 10);
+
+      let list = state.demons.filter(d => d.position <= maxPos);
+      if(q) list = list.filter(d => demonBlob(d).includes(q));
+
+      const s = ui.listSort.value;
+      list.sort((a,b) => {
+        if(s === "rank_asc") return a.position - b.position;
+        if(s === "rank_desc") return b.position - a.position;
+        if(s === "name_asc") return safeStr(a.name).localeCompare(safeStr(b.name));
+        if(s === "name_desc") return safeStr(b.name).localeCompare(safeStr(a.name));
+        return a.position - b.position;
+      });
+
+      ui.listRows.innerHTML = "";
+      const frag = document.createDocumentFragment();
+
+      for(const d of list){
+        const tr = document.createElement("tr");
+        if(state.selectedDemonId === d.id) tr.classList.add("sel");
+
+        const tdRank = document.createElement("td");
+        tdRank.className = "mono";
+        tdRank.textContent = "#" + d.position;
+
+        const tdName = document.createElement("td");
+        tdName.textContent = d.name || "(unnamed)";
+
+        const tdVerifier = document.createElement("td");
+        tdVerifier.textContent = (d.verifier && d.verifier.name) ? d.verifier.name : "—";
+
+        const tdPublisher = document.createElement("td");
+        tdPublisher.textContent = (d.publisher && d.publisher.name) ? d.publisher.name : "—";
+
+        tr.append(tdRank, tdName, tdVerifier, tdPublisher);
+        tr.addEventListener("click", () => openDemon(d));
+        frag.appendChild(tr);
+      }
+
+      ui.listRows.appendChild(frag);
+      ui.listCount.textContent = list.length + " shown";
+    }
+
+    // ----------------------------
+    // PLAYERS
+    // ----------------------------
+    async function loadPlayers(force=false){
+      setStatus("", "Loading players…");
+      ui.playerRows.innerHTML = "";
+      ui.playerCount.textContent = "Loading…";
+
+      const top = parseInt(ui.playerTop.value, 10);
+      const qs = new URLSearchParams();
+      qs.set("limit", String(Math.min(100, top))); // API pagination limit max 100 in docs; OK to cap.
+
+      const page = await fetchJson(apiUrl("/api/v1/players/ranking/?" + qs.toString()));
+      if(!Array.isArray(page)) throw new Error("Unexpected players response (expected JSON array).");
+
+      state.players = page;
+      renderPlayers();
+      setStatus("ok", "Loaded");
+    }
+
+    function regionFromPlayer(p){
+      if(p && p.nationality){
+        const n = p.nationality;
+        return n.country_code || n.iso_code || n.name || "—";
+      }
+      return "—";
+    }
+
+    function renderPlayers(){
+      const q = ui.playerSearch.value.trim().toLowerCase();
+      const top = parseInt(ui.playerTop.value, 10);
+
+      let list = state.players.slice(0, top);
+      if(q) list = list.filter(p => safeStr(p.name).toLowerCase().includes(q));
+
+      const s = ui.playerSort.value;
+      list.sort((a,b) => {
+        if(s === "rank_asc") return (a.rank ?? 0) - (b.rank ?? 0);
+        if(s === "rank_desc") return (b.rank ?? 0) - (a.rank ?? 0);
+        if(s === "score_desc") return (b.score ?? 0) - (a.score ?? 0);
+        if(s === "name_asc") return safeStr(a.name).localeCompare(safeStr(b.name));
+        return (a.rank ?? 0) - (b.rank ?? 0);
+      });
+
+      ui.playerRows.innerHTML = "";
+      const frag = document.createDocumentFragment();
+
+      for(const p of list){
+        const tr = document.createElement("tr");
+        const tdRank = document.createElement("td");
+        tdRank.className = "mono";
+        tdRank.textContent = p.rank != null ? ("#" + p.rank) : "—";
+
+        const tdName = document.createElement("td");
+        tdName.textContent = p.name || "(unnamed)";
+
+        const tdReg = document.createElement("td");
+        tdReg.textContent = regionFromPlayer(p);
+
+        const tdPts = document.createElement("td");
+        tdPts.className = "right mono";
+        tdPts.textContent = p.score != null ? Number(p.score).toFixed(2) : "—";
+
+        tr.append(tdRank, tdName, tdReg, tdPts);
+        frag.appendChild(tr);
+      }
+
+      ui.playerRows.appendChild(frag);
+      ui.playerCount.textContent = list.length + " shown";
+    }
+
+    // ----------------------------
+    // Drawer + Records (“who has beaten”)
+    // Records endpoint supports filtering by demon_id, status, progress, etc. citeturn3view0
+    // ----------------------------
+    function openDrawer(){
+      ui.overlay.classList.add("on");
+      ui.drawer.classList.add("on");
+      ui.overlay.setAttribute("aria-hidden", "false");
+    }
+    function closeDrawer(){
+      ui.overlay.classList.remove("on");
+      ui.drawer.classList.remove("on");
+      ui.overlay.setAttribute("aria-hidden", "true");
+    }
+
+    async function openDemon(d){
+      state.selectedDemonId = d.id;
+      renderList();
+
+      ui.dName.textContent = "#" + d.position + " — " + (d.name || "(unnamed)");
+      ui.dRank.textContent = "#" + d.position;
+      ui.dReqPill.textContent = "Req " + (d.requirement != null ? (d.requirement + "%") : "—");
+      ui.dVerifier.textContent = (d.verifier && d.verifier.name) ? d.verifier.name : "—";
+      ui.dPublisher.textContent = (d.publisher && d.publisher.name) ? d.publisher.name : "—";
+      ui.dCreators.textContent = (Array.isArray(d.creators) && d.creators.length)
+        ? d.creators.map(c => c && c.name ? c.name : "").filter(Boolean).join(", ")
+        : "—";
+      ui.dVideo.innerHTML = d.video ? ("<a target='_blank' rel='noreferrer' href='" + d.video + "'>Open</a>") : "—";
+
+      ui.recordsBox.innerHTML = "<div class='recRow'><div class='l'><div class='p'>Loading…</div><div class='s'>Fetching approved records</div></div><div class='badge'>—</div></div>";
+      ui.dRecordCount.textContent = "Records —";
+      ui.corsBox.style.display = "none";
+      openDrawer();
+
+      try{
+        const records = await getRecordsForDemon(d.id);
+        const beaten = records.filter(r => r && r.progress === 100);
+        ui.dRecordCount.textContent = "Records " + beaten.length;
+
+        renderRecords(beaten);
+        setStatus("ok", "Loaded");
+      } catch (err){
+        console.error(err);
+        ui.recordsBox.innerHTML = "";
+        ui.dRecordCount.textContent = "Records —";
+        ui.corsBox.style.display = "";
+        ui.corsBox.innerHTML =
+          "Couldn’t load records. This is usually CORS when running as a local file.<br>" +
+          "Run a proxy and set <span class='mono'>API</span> to <span class='mono'>http://localhost:8787</span>.<br>" +
+          "<span class='mono'>Error:</span> " + escapeHtml(err && err.message ? err.message : String(err));
+        setStatus("bad", "Records error");
+      }
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+
+    function renderRecords(recs){
+      ui.recordsBox.innerHTML = "";
+      if(!recs.length){
+        ui.recordsBox.innerHTML =
+          "<div class='recRow'><div class='l'><div class='p'>No approved 100% records returned</div><div class='s'>Try a proxy if this seems wrong.</div></div><div class='badge'>—</div></div>";
+        return;
+      }
+
+      // Sort: most recent first if "date" exists; else by id desc
+      recs.sort((a,b) => {
+        const da = a.date ? Date.parse(a.date) : NaN;
+        const db = b.date ? Date.parse(b.date) : NaN;
+        if(!Number.isNaN(da) && !Number.isNaN(db)) return db - da;
+        return (b.id ?? 0) - (a.id ?? 0);
+      });
+
+      const limit = Math.min(100, recs.length);
+      for(let i=0;i<limit;i++){
+        const r = recs[i];
+        const player = r.player && r.player.name ? r.player.name : safeStr(r.player || "—");
+        const prog = (r.progress != null) ? (r.progress + "%") : "—";
+        const when = r.date ? safeStr(r.date).slice(0, 10) : "—";
+        const video = r.video ? r.video : null;
+
+        const row = document.createElement("div");
+        row.className = "recRow";
+
+        const left = document.createElement("div");
+        left.className = "l";
+        left.innerHTML =
+          "<div class='p'>" + escapeHtml(player) + "</div>" +
+          "<div class='s'>Progress " + escapeHtml(prog) + " • Date " + escapeHtml(when) + (video ? " • <a target='_blank' rel='noreferrer' href='"+escapeHtml(video)+"'>Video</a>" : "") + "</div>";
+
+        const badge = document.createElement("div");
+        badge.className = "badge mono";
+        badge.textContent = "#" + (r.id != null ? r.id : "—");
+
+        row.append(left, badge);
+        ui.recordsBox.appendChild(row);
+      }
+    }
+
+    async function getRecordsForDemon(demonId){
+      if(state.recordsCache.has(demonId)) return state.recordsCache.get(demonId);
+
+      // Use /api/v1/records/ filtered by demon_id and approved status. Filtering is documented. citeturn3view0
+      // We pull up to 100 records (API limit per page is 100).
+      const qs = new URLSearchParams();
+      qs.set("limit", "100");
+      qs.set("status", "APPROVED");
+      qs.set("demon_id", String(demonId));
+
+      const url = apiUrl("/api/v1/records/?" + qs.toString());
+      const page = await fetchJson(url);
+      if(!Array.isArray(page)) throw new Error("Unexpected records response (expected JSON array).");
+
+      state.recordsCache.set(demonId, page);
+      return page;
+    }
+
+    // Events
+    ui.tabList.addEventListener("click", () => switchTab("list"));
+    ui.tabPlayers.addEventListener("click", () => switchTab("players"));
+    ui.tabCredits.addEventListener("click", () => switchTab("credits"));
+
+    ui.btnApi.addEventListener("click", promptApi);
+    ui.btnReload.addEventListener("click", reloadActive);
+
+    ui.listSearch.addEventListener("input", renderList);
+    ui.listRange.addEventListener("change", () => loadDemons(true).catch(showErrStatus));
+    ui.listSort.addEventListener("change", renderList);
+
+    ui.playerSearch.addEventListener("input", renderPlayers);
+    ui.playerTop.addEventListener("change", () => loadPlayers(true).catch(showErrStatus));
+    ui.playerSort.addEventListener("change", renderPlayers);
+
+    ui.overlay.addEventListener("click", closeDrawer);
+    ui.btnClose.addEventListener("click", closeDrawer);
+    window.addEventListener("keydown", (e) => {
+      if(e.key === "Escape") closeDrawer();
+    });
+
+    // Start
+    hintApi();
+    setStatus("", "Loading…");
+    loadDemons().catch(showErrStatus);
+  </script>
+
+  <!--
+    LOCAL PROXY (recommended to avoid CORS).
+    Save as proxy.js, then:
+      npm i express node-fetch
+      node proxy.js
+    Then click API and set: http://localhost:8787
+
+    const express = require("express");
+    const fetch = (...args) => import("node-fetch").then(({default: fetch}) => fetch(...args));
+    const app = express();
+
+    app.use((req,res,next)=>{
+      res.setHeader("Access-Control-Allow-Origin","*");
+      res.setHeader("Access-Control-Allow-Headers","*");
+      next();
+    });
+
+    app.get("/api/*", async (req,res)=>{
+      const upstream = "https://pointercrate.com" + req.originalUrl;
+      const r = await fetch(upstream, { headers: { "Accept":"application/json" }});
+      const body = await r.text();
+      res.status(r.status);
+      res.setHeader("Content-Type", r.headers.get("content-type") || "application/json");
+      res.send(body);
+    });
+
+    app.listen(8787, ()=>console.log("Proxy: http://localhost:8787"));
+  -->
+</body>
+</html>
